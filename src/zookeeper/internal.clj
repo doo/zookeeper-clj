@@ -49,11 +49,32 @@
 
 ;; Watcher
 
-(defn make-watcher
+(defn make-unique-watcher
   ([handler]
      (reify Watcher
        (process [this event]
          (handler (event-to-map event))))))
+
+(deftype IdWatcher [handler id]
+  org.apache.zookeeper.Watcher
+  (process [this event]
+    (handler (event-to-map event)))
+  Object
+  (equals [this that]
+    (when (identical? IdWatcher (class that)) ;; for some reason (instance? IdWatcher that) returns false when called inside of IdWatcher
+      (= (.id this) (.id that))))
+  (hashCode [this]
+    (.hashCode (.id this))))
+
+(defn make-id-watcher
+  ([handler id]
+     (IdWatcher. handler id)))
+
+(defn make-watcher
+  [watcher & [watcher-key]]
+  (if watcher-key
+    (make-id-watcher watcher watcher-key)
+    (make-unique-watcher watcher)))
 
 ;; Callbacks
 

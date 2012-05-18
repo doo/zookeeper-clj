@@ -51,6 +51,8 @@ Out of the box ZooKeeper provides name service, configuration, and group members
 
 ;; node existence function
 
+
+
 (defn exists
   "Returns the status of the given node, and nil
    if the node does not exist.
@@ -59,7 +61,7 @@ Out of the box ZooKeeper provides name service, configuration, and group members
 
     (use 'zookeeper)
     (def client (connect \"127.0.0.1:2181\"
-                         :wacher #(println \"event received: \" %)))
+                         :watcher #(println \"event received: \" %)))
 
     (defn callback [result]
       (println \"got callback result: \" result))
@@ -72,7 +74,7 @@ Out of the box ZooKeeper provides name service, configuration, and group members
     (def p1 (exists client \"/yadda\" :callback callback))
     @p1
 "
-  ([^ZooKeeper client ^String path & {:keys [watcher watch? async? callback context]
+  ([^ZooKeeper client ^String path & {:keys [watcher watch? async? callback context watcher-key]
                    :or {watch? false
                         async? false
                         context path}}]
@@ -82,7 +84,7 @@ Out of the box ZooKeeper provides name service, configuration, and group members
            (zi/try*
             (if watcher
               (.exists client path
-                       ^org.apache.zookeeper.Watcher (zi/make-watcher watcher)
+                       ^org.apache.zookeeper.Watcher (zi/make-watcher watcher watcher-key)
                        ^org.apache.zookeeper.AsyncCallback$StatCallback (zi/stat-callback (zi/promise-callback prom callback))
                        ^Object context)
               (.exists client path
@@ -93,7 +95,7 @@ Out of the box ZooKeeper provides name service, configuration, and group members
            prom)
          (zi/try*
           (if watcher
-            (zi/stat-to-map (.exists client path ^org.apache.zookeeper.Watcher (zi/make-watcher watcher)))
+            (zi/stat-to-map (.exists client path ^org.apache.zookeeper.Watcher (zi/make-watcher watcher watcher-key)))
             (zi/stat-to-map (.exists client path (boolean watch?))))
           (catch KeeperException e (throw e)))))))
 
@@ -213,7 +215,7 @@ Out of the box ZooKeeper provides name service, configuration, and group members
     @p3
 
 "
-  ([^ZooKeeper client path & {:keys [watcher watch? async? callback context sort?]
+  ([^ZooKeeper client path & {:keys [watcher watch? async? callback context sort? watcher-key]
                    :or {watch? false
                         async? false
                         context path}}]
@@ -222,16 +224,16 @@ Out of the box ZooKeeper provides name service, configuration, and group members
          (let [prom (promise)]
            (zi/try*
             (seq (.getChildren client path
-                               (if watcher (zi/make-watcher watcher) watch?)
+                               (if watcher (zi/make-watcher watcher watcher-key) watch?)
                                (zi/children-callback (zi/promise-callback prom callback)) context))
             (catch KeeperException e (throw e)))
            prom)
          (zi/try*
-          (seq (.getChildren client path (if watcher (zi/make-watcher watcher) watch?)))
+          (seq (.getChildren client path (if watcher (zi/make-watcher watcher watcher-key) watch?)))
           (catch org.apache.zookeeper.KeeperException$NoNodeException e false)
           (catch KeeperException e (throw e)))))))
 
-;; filtering childrend
+;; filtering children
 
 (defn filter-children-by-pattern
   "Returns a sequence of child node names filtered by the given regex pattern."
@@ -336,7 +338,7 @@ Out of the box ZooKeeper provides name service, configuration, and group members
     (read-string (String. (:data (data client \"/foobar\"))))
 
 "
-  ([^ZooKeeper client path & {:keys [watcher watch? async? callback context]
+  ([^ZooKeeper client path & {:keys [watcher watch? async? callback context watcher-key]
                    :or {watch? false
                         async? false
                         context path}}]
@@ -344,12 +346,12 @@ Out of the box ZooKeeper provides name service, configuration, and group members
        (if (or async? callback)
         (let [prom (promise)]
           (zi/try*
-           (.getData client path (if watcher (zi/make-watcher watcher) watch?)
+           (.getData client path (if watcher (zi/make-watcher watcher watcher-key) watch?)
                      (zi/data-callback (zi/promise-callback prom callback)) context)
            (catch KeeperException e (throw e)))
           prom)
         {:data (zi/try*
-                (.getData client path (if watcher (zi/make-watcher watcher) watch?) stat)
+                (.getData client path (if watcher (zi/make-watcher watcher watcher-key) watch?) stat)
                 (catch KeeperException e (throw e)))
          :stat (zi/stat-to-map stat)}))))
 

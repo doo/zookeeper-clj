@@ -71,7 +71,7 @@ if the :watch? flag is set to true when using the exists, children, or data func
 * **children**: the watch will be triggered by a successful operation that deletes the node of the given path or creates/deletes a child under the node.
 * **data**: the watch will be triggered by a successful operation that sets data on the node, or deletes the node.
 
-The default watcher function can be overriden with a custom function by passing it as the :watcher argument to the exists, children, or data functions.
+The default watcher function can be overriden with a custom function by passing it as the :watcher argument to the exists, children, or data functions. These functions also take an optional :watcher-key parameter. If a watcher with the same watcher-key has been registered previously, the previous watcher will be overriden with the new watcher, i.e. it will never be invoked. 
 
 The argument to the watcher function is a map with three keys: :event-type, :keeper-state, and :path.
 
